@@ -155,15 +155,9 @@ export class CheckoutService {
 
     // 6. Processa pagamento
     const paymentResult = await this.paymentsService.processPayment(order.id, {
-      method: dto.payment.method,
+      method: dto.payment.method as any,
       installments: dto.payment.installments,
-      card: dto.payment.card,
-      amount: total,
-      customer: {
-        name: dto.customer.name,
-        email: dto.customer.email,
-        cpf: dto.customer.cpf,
-      },
+      card: dto.payment.card as any,
     })
 
     // 7. Envia e-mails (fire-and-forget — não bloqueia a resposta)
@@ -176,17 +170,18 @@ export class CheckoutService {
       paymentResult.status,
     )
 
+    const pr = paymentResult as any
     return {
       order,
       payment: paymentResult.payment,
-      pix: paymentResult.intent?.pixCode
+      pix: pr.intent?.pixCode
         ? {
-            code: paymentResult.intent.pixCode,
-            qrCode: paymentResult.intent.pixQrCode,
+            code: pr.intent.pixCode,
+            qrCode: pr.intent.pixQrCode,
           }
         : undefined,
-      boleto: paymentResult.intent?.boletoUrl
-        ? { url: paymentResult.intent.boletoUrl }
+      boleto: pr.intent?.boletoUrl
+        ? { url: pr.intent.boletoUrl }
         : undefined,
       checkoutUrl: paymentResult.checkoutUrl,
     }

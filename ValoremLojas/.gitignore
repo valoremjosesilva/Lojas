@@ -5,8 +5,8 @@ build/
 .env
 *.env.local
 
-# Prisma
-packages/database/migrations/
+# Prisma — migrations devem ser versionadas
+# packages/database/migrations/
 
 # Logs
 *.log

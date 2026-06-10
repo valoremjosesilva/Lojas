@@ -41,15 +41,15 @@ export async function apiClient<T = any>(
 
 // Helpers
 export const api = {
-  get: <T>(path: string, opts?: FetchOptions) =>
+  get: <T = any>(path: string, opts?: FetchOptions) =>
     apiClient<T>(path, { ...opts, method: 'GET' }),
 
-  post: <T>(path: string, body: any, opts?: FetchOptions) =>
+  post: <T = any>(path: string, body: any, opts?: FetchOptions) =>
     apiClient<T>(path, { ...opts, method: 'POST', body: JSON.stringify(body) }),
 
-  put: <T>(path: string, body: any, opts?: FetchOptions) =>
+  put: <T = any>(path: string, body: any, opts?: FetchOptions) =>
     apiClient<T>(path, { ...opts, method: 'PUT', body: JSON.stringify(body) }),
 
-  delete: <T>(path: string, opts?: FetchOptions) =>
+  delete: <T = any>(path: string, opts?: FetchOptions) =>
     apiClient<T>(path, { ...opts, method: 'DELETE' }),
 }

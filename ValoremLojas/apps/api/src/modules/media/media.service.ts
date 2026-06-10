@@ -49,7 +49,6 @@ export class MediaService {
       Bucket: this.bucket,
       Key: key,
       ContentType: contentType,
-      ContentLengthRange: [1, MAX_SIZE_BYTES] as any,
     })
 
     const uploadUrl = await getSignedUrl(this.s3, command, { expiresIn: 120 })
