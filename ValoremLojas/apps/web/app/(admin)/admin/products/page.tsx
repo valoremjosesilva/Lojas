@@ -30,6 +30,35 @@ interface Category {
   slug: string
 }
 
+interface AttributeValue {
+  id: string
+  value: string
+  position: number
+}
+
+interface ProductAttribute {
+  id: string
+  name: string
+  position: number
+  values: AttributeValue[]
+}
+
+interface VariantAttributeValue {
+  attributeValueId: string
+  attributeValue: { id: string; value: string; attributeId: string; attribute: { id: string; name: string } }
+}
+
+interface ProductVariant {
+  id: string
+  sku?: string | null
+  price: string | number
+  comparePrice?: string | number | null
+  stock: number
+  active: boolean
+  attributeValues: VariantAttributeValue[]
+  images?: ProductImage[]
+}
+
 interface ProductForm {
   name: string
   slug: string
@@ -73,6 +102,15 @@ export default function AdminProducts() {
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  // Variants tab
+  const [variantTab, setVariantTab] = useState<'info' | 'variants'>('info')
+  const [attributes, setAttributes] = useState<ProductAttribute[]>([])
+  const [variants, setVariants] = useState<ProductVariant[]>([])
+  const [newAttrName, setNewAttrName] = useState('')
+  const [newValueInputs, setNewValueInputs] = useState<Record<string, string>>({})
+  const [variantEdits, setVariantEdits] = useState<Record<string, Partial<ProductVariant>>>({})
+  const [savingVariant, setSavingVariant] = useState<string | null>(null)
+
   useEffect(() => {
     const token = localStorage.getItem('admin_token')
     if (!token) { window.location.href = '/admin/login'; return }
@@ -92,6 +130,18 @@ export default function AdminProducts() {
       })
       .catch(console.error)
       .finally(() => setLoading(false))
+  }
+
+  async function loadVariantsData(productId: string) {
+    const token = localStorage.getItem('admin_token') ?? ''
+    try {
+      const [attrs, vars] = await Promise.all([
+        api.get<ProductAttribute[]>(`/products/${productId}/attributes`, { token }),
+        api.get<ProductVariant[]>(`/products/${productId}/variants`, { token }),
+      ])
+      setAttributes(Array.isArray(attrs) ? attrs : [])
+      setVariants(Array.isArray(vars) ? vars : [])
+    } catch { /* ignore */ }
   }
 
   function openCreate() {
@@ -119,6 +169,8 @@ export default function AdminProducts() {
     setEditId(p.id)
     setError('')
     setShowForm(true)
+    setVariantTab('info')
+    loadVariantsData(p.id)
   }
 
   async function save() {
@@ -172,6 +224,77 @@ export default function AdminProducts() {
     } catch (e: any) {
       alert(e.message)
     }
+  }
+
+  // ─── Attributes ───────────────────────────────────────────────────────────
+  async function addAttribute() {
+    if (!newAttrName.trim() || !editId) return
+    const token = localStorage.getItem('admin_token') ?? ''
+    try {
+      await api.post(`/products/${editId}/attributes`, { name: newAttrName.trim() }, { token })
+      setNewAttrName('')
+      await loadVariantsData(editId)
+    } catch (e: any) { alert(e.message) }
+  }
+
+  async function deleteAttribute(attrId: string) {
+    if (!editId || !confirm('Remover atributo e todos os seus valores?')) return
+    const token = localStorage.getItem('admin_token') ?? ''
+    try {
+      await api.delete(`/products/${editId}/attributes/${attrId}`, { token })
+      await loadVariantsData(editId)
+    } catch (e: any) { alert(e.message) }
+  }
+
+  async function addValue(attrId: string) {
+    const val = newValueInputs[attrId]?.trim()
+    if (!val || !editId) return
+    const token = localStorage.getItem('admin_token') ?? ''
+    try {
+      await api.post(`/products/${editId}/attributes/${attrId}/values`, { value: val }, { token })
+      setNewValueInputs((prev) => ({ ...prev, [attrId]: '' }))
+      await loadVariantsData(editId)
+    } catch (e: any) { alert(e.message) }
+  }
+
+  async function deleteValue(attrId: string, valueId: string) {
+    if (!editId) return
+    const token = localStorage.getItem('admin_token') ?? ''
+    try {
+      await api.delete(`/products/${editId}/attributes/${attrId}/values/${valueId}`, { token })
+      await loadVariantsData(editId)
+    } catch (e: any) { alert(e.message) }
+  }
+
+  // ─── Variants ─────────────────────────────────────────────────────────────
+  async function generateVariants() {
+    if (!editId || !confirm('Gerar todas as combinações? Variantes existentes não serão duplicadas.')) return
+    const token = localStorage.getItem('admin_token') ?? ''
+    try {
+      await api.post(`/products/${editId}/variants/generate`, {}, { token })
+      await loadVariantsData(editId)
+    } catch (e: any) { alert(e.message) }
+  }
+
+  async function saveVariantEdit(variantId: string) {
+    if (!editId) return
+    const token = localStorage.getItem('admin_token') ?? ''
+    setSavingVariant(variantId)
+    try {
+      await api.patch(`/products/${editId}/variants/${variantId}`, variantEdits[variantId] ?? {}, { token })
+      setVariantEdits((prev) => { const n = { ...prev }; delete n[variantId]; return n })
+      await loadVariantsData(editId)
+    } catch (e: any) { alert(e.message) }
+    finally { setSavingVariant(null) }
+  }
+
+  async function toggleVariantActive(v: ProductVariant) {
+    if (!editId) return
+    const token = localStorage.getItem('admin_token') ?? ''
+    try {
+      await api.patch(`/products/${editId}/variants/${v.id}`, { active: !v.active }, { token })
+      await loadVariantsData(editId)
+    } catch (e: any) { alert(e.message) }
   }
 
   // --- Image management ---
@@ -243,6 +366,24 @@ export default function AdminProducts() {
       {showForm && (
         <div className="bg-white border rounded-xl p-6 mb-6">
           <h2 className="font-semibold mb-4">{editSlug ? 'Editar produto' : 'Novo produto'}</h2>
+
+          {/* Tabs — apenas na edição */}
+          {editId && (
+            <div className="flex gap-1 mb-5 border-b">
+              {(['info', 'variants'] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setVariantTab(t)}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition
+                    ${variantTab === t ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                >
+                  {t === 'info' ? 'Informações' : 'Variantes'}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {(!editId || variantTab === 'info') && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-xs text-gray-500 block mb-1">Nome *</label>
@@ -322,6 +463,171 @@ export default function AdminProducts() {
               </label>
             </div>
           </div>
+          )}
+
+          {/* Aba Variantes */}
+          {editId && variantTab === 'variants' && (
+            <div className="space-y-6">
+
+              {/* Seção Atributos */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Atributos</h3>
+                {attributes.length === 0 && (
+                  <p className="text-sm text-gray-400 mb-3">Nenhum atributo cadastrado.</p>
+                )}
+                <div className="space-y-3">
+                  {attributes.map((attr) => (
+                    <div key={attr.id} className="border rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">{attr.name}</span>
+                        <button onClick={() => deleteAttribute(attr.id)}
+                          className="text-xs text-red-400 hover:text-red-600">Remover</button>
+                      </div>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {attr.values.map((v) => (
+                          <span key={v.id}
+                            className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full">
+                            {v.value}
+                            <button onClick={() => deleteValue(attr.id, v.id)}
+                              className="text-gray-400 hover:text-red-500 leading-none">&times;</button>
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          className="border rounded px-2 py-1 text-xs flex-1 focus:outline-none focus:ring-1 focus:ring-black"
+                          placeholder="+ novo valor"
+                          value={newValueInputs[attr.id] ?? ''}
+                          onChange={(e) => setNewValueInputs((prev) => ({ ...prev, [attr.id]: e.target.value }))}
+                          onKeyDown={(e) => e.key === 'Enter' && addValue(attr.id)}
+                        />
+                        <button onClick={() => addValue(attr.id)}
+                          className="text-xs border px-2 py-1 rounded hover:bg-gray-50">Adicionar</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <input
+                    className="border rounded-lg px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-black"
+                    placeholder="Nome do atributo (ex: Tamanho)"
+                    value={newAttrName}
+                    onChange={(e) => setNewAttrName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && addAttribute()}
+                  />
+                  <button onClick={addAttribute}
+                    className="bg-black text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800">
+                    + Atributo
+                  </button>
+                </div>
+              </div>
+
+              {/* Gerar combinações */}
+              {attributes.length > 0 && (
+                <div>
+                  <button onClick={generateVariants}
+                    className="border border-dashed border-gray-400 text-gray-600 px-4 py-2 rounded-lg text-sm hover:border-black hover:text-black transition">
+                    Gerar todas as combinações
+                  </button>
+                  <p className="text-xs text-gray-400 mt-1">Variantes existentes não serão duplicadas.</p>
+                </div>
+              )}
+
+              {/* Tabela de variantes */}
+              {variants.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                    Variantes ({variants.length})
+                  </h3>
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full text-xs">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          {['Atributos', 'SKU', 'Preço', 'Estoque', 'Ativo', ''].map((h) => (
+                            <th key={h} className="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wide">
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {variants.map((v) => {
+                          const label = v.attributeValues
+                            .map((vav) => vav.attributeValue.value)
+                            .join(' / ')
+                          return (
+                            <tr key={v.id} className="border-t hover:bg-gray-50">
+                              <td className="px-3 py-2 font-medium">{label || '—'}</td>
+                              <td className="px-3 py-2">
+                                <input
+                                  className="border rounded px-2 py-1 w-24 text-xs focus:outline-none focus:ring-1 focus:ring-black"
+                                  placeholder="SKU"
+                                  defaultValue={v.sku ?? ''}
+                                  onChange={(e) =>
+                                    setVariantEdits((prev) => ({
+                                      ...prev,
+                                      [v.id]: { ...(prev[v.id] ?? {}), sku: e.target.value },
+                                    }))
+                                  }
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  type="number" step="0.01" min="0"
+                                  className="border rounded px-2 py-1 w-24 text-xs focus:outline-none focus:ring-1 focus:ring-black"
+                                  defaultValue={Number(v.price)}
+                                  onChange={(e) =>
+                                    setVariantEdits((prev) => ({
+                                      ...prev,
+                                      [v.id]: { ...(prev[v.id] ?? {}), price: Number(e.target.value) },
+                                    }))
+                                  }
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  type="number" min="0"
+                                  className="border rounded px-2 py-1 w-20 text-xs focus:outline-none focus:ring-1 focus:ring-black"
+                                  defaultValue={v.stock}
+                                  onChange={(e) =>
+                                    setVariantEdits((prev) => ({
+                                      ...prev,
+                                      [v.id]: { ...(prev[v.id] ?? {}), stock: Number(e.target.value) },
+                                    }))
+                                  }
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <button
+                                  onClick={() => toggleVariantActive(v)}
+                                  className={`px-2 py-1 rounded-full text-xs font-medium transition
+                                    ${v.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}
+                                >
+                                  {v.active ? 'Ativo' : 'Inativo'}
+                                </button>
+                              </td>
+                              <td className="px-3 py-2">
+                                {variantEdits[v.id] && (
+                                  <button
+                                    onClick={() => saveVariantEdit(v.id)}
+                                    disabled={savingVariant === v.id}
+                                    className="text-xs bg-black text-white px-2 py-1 rounded hover:bg-gray-800 disabled:opacity-50"
+                                  >
+                                    {savingVariant === v.id ? '...' : 'Salvar'}
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
           <div className="flex gap-3 mt-5">
             <button onClick={save} disabled={saving}
