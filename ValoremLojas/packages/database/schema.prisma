@@ -167,6 +167,7 @@ model ProductAttribute {
   values    AttributeValue[]
 
   @@index([productId])
+  @@index([storeId])
   @@map("product_attributes")
 }
 
@@ -226,6 +227,7 @@ model VariantImage {
 
   variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
+  @@index([variantId])
   @@map("variant_images")
 }
 
