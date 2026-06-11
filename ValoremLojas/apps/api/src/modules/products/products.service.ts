@@ -4,6 +4,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import { Cache } from 'cache-manager'
 import { SearchService } from '../search/search.service'
 import { MediaService } from '../media/media.service'
+import { PlansService } from '../plans/plans.service'
 
 @Injectable()
 export class ProductsService {
@@ -12,6 +13,7 @@ export class ProductsService {
     @Inject(CACHE_MANAGER) private cache: Cache,
     @Optional() private readonly searchService?: SearchService,
     @Optional() private readonly mediaService?: MediaService,
+    private readonly plansService?: PlansService,
   ) {}
 
   private cacheKey(storeId: string) {
@@ -79,6 +81,7 @@ export class ProductsService {
   }
 
   async create(storeId: string, data: any) {
+    await this.plansService?.checkProductLimit(storeId)
     const product = await this.prisma.product.create({
       data: { ...data, storeId },
       include: {
