@@ -118,7 +118,7 @@ export class ProductsService {
   private indexProduct(product: any) {
     const hasVariants = product.variants && product.variants.length > 0
     const price = hasVariants
-      ? Math.min(...product.variants.map((v: any) => Number(v.price)))
+      ? product.variants.reduce((min: number, v: any) => Math.min(min, Number(v.price)), Infinity)
       : Number(product.price)
     const stock = hasVariants
       ? product.variants.reduce((acc: number, v: any) => acc + v.stock, 0)
