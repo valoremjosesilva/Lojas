@@ -23,7 +23,7 @@ export default function CartPage() {
 
       <div className="space-y-4">
         {items.map((item) => (
-          <div key={item.productId} className="flex gap-4 items-center p-4 border rounded-xl">
+          <div key={`${item.productId}:${item.variantId ?? ''}`} className="flex gap-4 items-center p-4 border rounded-xl">
             <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden relative flex-shrink-0">
               {item.imageUrl ? (
                 <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
@@ -42,16 +42,16 @@ export default function CartPage() {
             <div className="flex items-center border rounded-lg overflow-hidden">
               <button
                 className="px-2 py-1 bg-gray-100"
-                onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                onClick={() => updateQuantity(item.productId, item.quantity - 1, item.variantId)}
               >−</button>
               <span className="px-3">{item.quantity}</span>
               <button
                 className="px-2 py-1 bg-gray-100"
-                onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                onClick={() => updateQuantity(item.productId, item.quantity + 1, item.variantId)}
               >+</button>
             </div>
 
-            <button onClick={() => removeItem(item.productId)} className="text-red-400 hover:text-red-600 ml-2">✕</button>
+            <button onClick={() => removeItem(item.productId, item.variantId)} className="text-red-400 hover:text-red-600 ml-2">✕</button>
           </div>
         ))}
       </div>
