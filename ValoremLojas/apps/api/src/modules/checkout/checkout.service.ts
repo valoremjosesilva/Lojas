@@ -5,6 +5,7 @@ import { NotificationsService } from '../notifications/notifications.service'
 
 export interface CartItem {
   productId: string
+  variantId?: string
   quantity: number
 }
 
@@ -54,17 +55,63 @@ export class CheckoutService {
       throw new BadRequestException('Um ou mais produtos não encontrados')
     }
 
+    // Busca variantes necessárias (batch)
+    const itemsWithVariant = dto.items.filter((i) => i.variantId)
+    const variantMap = new Map<string, any>()
+    if (itemsWithVariant.length > 0) {
+      const fetched = await this.prisma.productVariant.findMany({
+        where: {
+          id: { in: itemsWithVariant.map((i) => i.variantId!) },
+          storeId,
+          active: true,
+        },
+      })
+      fetched.forEach((v) => variantMap.set(v.id, v))
+    }
+
+    // Descobre quais produtos têm variantes ativas (para items sem variantId)
+    const itemsWithoutVariant = dto.items.filter((i) => !i.variantId)
+    const productsWithVariants = new Set<string>()
+    if (itemsWithoutVariant.length > 0) {
+      const pv = await this.prisma.productVariant.findMany({
+        where: {
+          productId: { in: itemsWithoutVariant.map((i) => i.productId) },
+          storeId,
+          active: true,
+        },
+        select: { productId: true },
+        distinct: ['productId'],
+      })
+      pv.forEach((v) => productsWithVariants.add(v.productId))
+    }
+
     // Verifica estoque
     for (const item of dto.items) {
       const product = products.find((p) => p.id === item.productId)!
-      if (product.stock < item.quantity) {
-        throw new BadRequestException(`Estoque insuficiente: ${product.name}`)
+      if (item.variantId) {
+        const variant = variantMap.get(item.variantId)
+        if (!variant || variant.productId !== item.productId) {
+          throw new BadRequestException(`Variante indisponível: ${product.name}`)
+        }
+        if (variant.stock < item.quantity) {
+          throw new BadRequestException(`Estoque insuficiente: ${product.name}`)
+        }
+      } else {
+        if (productsWithVariants.has(item.productId)) {
+          throw new BadRequestException(`Selecione uma variante para: ${product.name}`)
+        }
+        if (product.stock < item.quantity) {
+          throw new BadRequestException(`Estoque insuficiente: ${product.name}`)
+        }
       }
     }
 
     let subtotal = dto.items.reduce((acc, item) => {
       const product = products.find((p) => p.id === item.productId)!
-      return acc + Number(product.price) * item.quantity
+      const price = item.variantId
+        ? Number(variantMap.get(item.variantId)!.price)
+        : Number(product.price)
+      return acc + price * item.quantity
     }, 0)
 
     // 2. Aplica cupom (se houver)
@@ -134,10 +181,13 @@ export class CheckoutService {
         items: {
           create: dto.items.map((item) => {
             const product = products.find((p) => p.id === item.productId)!
+            const variant = item.variantId ? variantMap.get(item.variantId) : null
+            const price = variant ? Number(variant.price) : Number(product.price)
             return {
               productId: item.productId,
+              variantId: item.variantId ?? null,
               name: product.name,
-              price: product.price,
+              price,
               quantity: item.quantity,
             }
           }),
@@ -147,10 +197,17 @@ export class CheckoutService {
 
     // 5. Desconta estoque
     for (const item of dto.items) {
-      await this.prisma.product.update({
-        where: { id: item.productId },
-        data: { stock: { decrement: item.quantity } },
-      })
+      if (item.variantId) {
+        await this.prisma.productVariant.update({
+          where: { id: item.variantId },
+          data: { stock: { decrement: item.quantity } },
+        })
+      } else {
+        await this.prisma.product.update({
+          where: { id: item.productId },
+          data: { stock: { decrement: item.quantity } },
+        })
+      }
     }
 
     // 6. Processa pagamento
