@@ -50,6 +50,9 @@ export const api = {
   put: <T = any>(path: string, body: any, opts?: FetchOptions) =>
     apiClient<T>(path, { ...opts, method: 'PUT', body: JSON.stringify(body) }),
 
+  patch: <T = any>(path: string, body: any, opts?: FetchOptions) =>
+    apiClient<T>(path, { ...opts, method: 'PATCH', body: JSON.stringify(body) }),
+
   delete: <T = any>(path: string, opts?: FetchOptions) =>
     apiClient<T>(path, { ...opts, method: 'DELETE' }),
 }
