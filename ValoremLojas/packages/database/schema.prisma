@@ -135,6 +135,8 @@ model Product {
   category    Category?    @relation(fields: [categoryId], references: [id])
   images      ProductImage[]
   orderItems  OrderItem[]
+  attributes  ProductAttribute[]
+  variants    ProductVariant[]
 
   @@unique([storeId, slug])
   @@index([storeId])
@@ -152,6 +154,79 @@ model ProductImage {
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("product_images")
+}
+
+model ProductAttribute {
+  id        String           @id @default(uuid())
+  productId String
+  storeId   String
+  name      String
+  position  Int              @default(0)
+
+  product   Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  values    AttributeValue[]
+
+  @@index([productId])
+  @@map("product_attributes")
+}
+
+model AttributeValue {
+  id          String                   @id @default(uuid())
+  attributeId String
+  value       String
+  position    Int                      @default(0)
+
+  attribute     ProductAttribute         @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  variantValues VariantAttributeValue[]
+
+  @@index([attributeId])
+  @@map("attribute_values")
+}
+
+model ProductVariant {
+  id           String    @id @default(uuid())
+  productId    String
+  storeId      String
+  sku          String?
+  price        Decimal
+  comparePrice Decimal?
+  costPrice    Decimal?
+  stock        Int       @default(0)
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  product         Product                 @relation(fields: [productId], references: [id], onDelete: Cascade)
+  attributeValues VariantAttributeValue[]
+  images          VariantImage[]
+  orderItems      OrderItem[]
+
+  @@index([productId])
+  @@index([storeId])
+  @@map("product_variants")
+}
+
+model VariantAttributeValue {
+  variantId        String
+  attributeValueId String
+
+  variant        ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  attributeValue AttributeValue @relation(fields: [attributeValueId], references: [id], onDelete: Restrict)
+
+  @@id([variantId, attributeValueId])
+  @@map("variant_attribute_values")
+}
+
+model VariantImage {
+  id        String  @id @default(uuid())
+  variantId String
+  url       String
+  alt       String?
+  order     Int     @default(0)
+
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@map("variant_images")
 }
 
 // =============================================
@@ -268,12 +343,14 @@ model OrderItem {
   id         String  @id @default(uuid())
   orderId    String
   productId  String
-  name       String  // snapshot do nome
-  price      Decimal // snapshot do preço
+  variantId  String?
+  name       String
+  price      Decimal
   quantity   Int
 
-  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product    Product @relation(fields: [productId], references: [id])
+  order      Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product    Product            @relation(fields: [productId], references: [id])
+  variant    ProductVariant?    @relation(fields: [variantId], references: [id])
 
   @@map("order_items")
 }
