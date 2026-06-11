@@ -110,6 +110,7 @@ export default function AdminProducts() {
   const [newValueInputs, setNewValueInputs] = useState<Record<string, string>>({})
   const [variantEdits, setVariantEdits] = useState<Record<string, Partial<ProductVariant>>>({})
   const [savingVariant, setSavingVariant] = useState<string | null>(null)
+  const [variantsReloadCount, setVariantsReloadCount] = useState(0)
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token')
@@ -141,6 +142,7 @@ export default function AdminProducts() {
       ])
       setAttributes(Array.isArray(attrs) ? attrs : [])
       setVariants(Array.isArray(vars) ? vars : [])
+      setVariantsReloadCount((n) => n + 1)
     } catch { /* ignore */ }
   }
 
@@ -150,6 +152,14 @@ export default function AdminProducts() {
     setEditId(null)
     setError('')
     setShowForm(true)
+    setVariantTab('info')
+    setAttributes([])
+    setVariants([])
+    setNewAttrName('')
+    setNewValueInputs({})
+    setVariantEdits({})
+    setSavingVariant(null)
+    setVariantsReloadCount(0)
   }
 
   function openEdit(p: Product) {
@@ -543,8 +553,8 @@ export default function AdminProducts() {
                     <table className="w-full text-xs">
                       <thead className="bg-gray-50">
                         <tr>
-                          {['Atributos', 'SKU', 'Preço', 'Estoque', 'Ativo', ''].map((h) => (
-                            <th key={h} className="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wide">
+                          {['Atributos', 'SKU', 'Preço', 'Estoque', 'Ativo', ''].map((h, i) => (
+                            <th key={i} className="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wide">
                               {h}
                             </th>
                           ))}
@@ -556,7 +566,7 @@ export default function AdminProducts() {
                             .map((vav) => vav.attributeValue.value)
                             .join(' / ')
                           return (
-                            <tr key={v.id} className="border-t hover:bg-gray-50">
+                            <tr key={`${v.id}-${variantsReloadCount}`} className="border-t hover:bg-gray-50">
                               <td className="px-3 py-2 font-medium">{label || '—'}</td>
                               <td className="px-3 py-2">
                                 <input
