@@ -13,7 +13,7 @@ export class ProductsService {
     @Inject(CACHE_MANAGER) private cache: Cache,
     @Optional() private readonly searchService?: SearchService,
     @Optional() private readonly mediaService?: MediaService,
-    private readonly plansService?: PlansService,
+    private readonly plansService: PlansService,
   ) {}
 
   private cacheKey(storeId: string) {
@@ -81,7 +81,7 @@ export class ProductsService {
   }
 
   async create(storeId: string, data: any) {
-    await this.plansService?.checkProductLimit(storeId)
+    await this.plansService.checkProductLimit(storeId)
     const product = await this.prisma.product.create({
       data: { ...data, storeId },
       include: {
