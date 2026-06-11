@@ -15,6 +15,7 @@ import { OrdersModule } from './modules/orders/orders.module'
 import { CheckoutModule } from './modules/checkout/checkout.module'
 import { PaymentsModule } from './modules/payments/payments.module'
 import { CouponsModule } from './modules/coupons/coupons.module'
+import { InventoryModule } from './modules/inventory/inventory.module'
 import { SearchModule } from './modules/search/search.module'
 import { MediaModule } from './modules/media/media.module'
 import { NotificationsModule } from './modules/notifications/notifications.module'
@@ -44,6 +45,7 @@ import { JobsModule } from './modules/jobs/jobs.module'
     CheckoutModule,
     PaymentsModule,
     CouponsModule,
+    InventoryModule,
     SearchModule,
     MediaModule,
     NotificationsModule,
