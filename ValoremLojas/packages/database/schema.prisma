@@ -56,10 +56,12 @@ model UpgradeRequest {
   notes       String?
   createdAt   DateTime             @default(now())
   resolvedAt  DateTime?
+  updatedAt   DateTime             @updatedAt
 
   tenant      Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
+  @@index([status, createdAt])
   @@map("upgrade_requests")
 }
 
