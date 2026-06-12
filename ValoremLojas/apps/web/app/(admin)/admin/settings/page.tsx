@@ -129,7 +129,7 @@ export default function AdminSettings() {
     setRequestingUpgrade(true)
     setUpgradeError('')
     try {
-      await api.post('/billing/upgrade', { toPlan: upgradeTarget }, { token })
+      const newRequest = await api.post('/billing/upgrade', { toPlan: upgradeTarget }, { token })
       setUpgradeSuccess(true)
       setUpgradeTarget(null)
       setBilling((prev) =>
@@ -137,9 +137,9 @@ export default function AdminSettings() {
           ? {
               ...prev,
               pendingRequest: {
-                id: 'pending',
+                id: newRequest.id,
                 toPlan: upgradeTarget,
-                createdAt: new Date().toISOString(),
+                createdAt: newRequest.createdAt,
               },
             }
           : prev,

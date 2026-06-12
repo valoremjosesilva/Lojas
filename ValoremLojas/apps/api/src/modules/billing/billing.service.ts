@@ -85,21 +85,23 @@ export class BillingService {
       )
     }
 
-    const existing = await this.prisma.upgradeRequest.findFirst({
-      where: { tenantId: tenant.id, status: UpgradeRequestStatus.PENDING },
-    })
-    if (existing) {
-      throw new ConflictException('Já existe uma solicitação de upgrade pendente')
-    }
+    const request = await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.upgradeRequest.findFirst({
+        where: { tenantId: tenant.id, status: UpgradeRequestStatus.PENDING },
+      })
+      if (existing) {
+        throw new ConflictException('Já existe uma solicitação de upgrade pendente')
+      }
 
-    const request = await this.prisma.upgradeRequest.create({
-      data: {
-        tenantId: tenant.id,
-        fromPlan: effectivePlan,
-        toPlan,
-        status: UpgradeRequestStatus.PENDING,
-      },
-    })
+      return tx.upgradeRequest.create({
+        data: {
+          tenantId: tenant.id,
+          fromPlan: effectivePlan,
+          toPlan,
+          status: UpgradeRequestStatus.PENDING,
+        },
+      })
+    }, { isolationLevel: 'Serializable' })
 
     this.notifications.sendUpgradeRequest({
       tenantId: tenant.id,
