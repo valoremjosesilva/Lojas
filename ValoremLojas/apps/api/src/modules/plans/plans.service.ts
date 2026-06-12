@@ -1,6 +1,7 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '../../infra/database/prisma.service'
 import { Plan } from '@prisma/client'
+import { resolveEffectivePlan } from '../billing/billing.service'
 
 export const PLAN_LIMITS: Record<Plan, { stores: number; productsPerStore: number }> = {
   BASIC:      { stores: 1,        productsPerStore: 30  },
@@ -32,11 +33,15 @@ export class PlansService {
   async getUsage(storeId: string): Promise<UsageResult> {
     const store = await this.prisma.store.findUnique({
       where: { id: storeId },
-      include: { tenant: true },
+      include: {
+        tenant: {
+          select: { plan: true, trialPlan: true, trialEndsAt: true, id: true },
+        },
+      },
     })
     if (!store) throw new NotFoundException('Loja não encontrada')
 
-    const plan = store.tenant.plan
+    const plan = resolveEffectivePlan(store.tenant.plan, store.tenant.trialPlan, store.tenant.trialEndsAt)
     const limits = PLAN_LIMITS[plan]
 
     const [products, stores] = await Promise.all([
@@ -61,11 +66,15 @@ export class PlansService {
   async checkProductLimit(storeId: string): Promise<void> {
     const store = await this.prisma.store.findUnique({
       where: { id: storeId },
-      include: { tenant: true },
+      include: {
+        tenant: {
+          select: { plan: true, trialPlan: true, trialEndsAt: true },
+        },
+      },
     })
     if (!store) throw new NotFoundException('Loja não encontrada')
 
-    const { plan } = store.tenant
+    const plan = resolveEffectivePlan(store.tenant.plan, store.tenant.trialPlan, store.tenant.trialEndsAt)
     const limit = PLAN_LIMITS[plan].productsPerStore
     if (limit === Infinity) return
 
@@ -78,16 +87,20 @@ export class PlansService {
   }
 
   async checkStoreLimit(tenantId: string): Promise<void> {
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } })
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { plan: true, trialPlan: true, trialEndsAt: true },
+    })
     if (!tenant) throw new NotFoundException('Tenant não encontrado')
 
-    const limit = PLAN_LIMITS[tenant.plan].stores
+    const plan = resolveEffectivePlan(tenant.plan, tenant.trialPlan, tenant.trialEndsAt)
+    const limit = PLAN_LIMITS[plan].stores
     if (limit === Infinity) return
 
     const count = await this.prisma.store.count({ where: { tenantId } })
     if (count >= limit) {
       throw new ForbiddenException(
-        `Limite de lojas atingido (${count}/${limit}). ${this.upgradeMessage(tenant.plan)}`,
+        `Limite de lojas atingido (${count}/${limit}). ${this.upgradeMessage(plan)}`,
       )
     }
   }
