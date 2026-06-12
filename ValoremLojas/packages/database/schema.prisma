@@ -25,7 +25,12 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  stores Store[]
+  billingEmail    String?
+  trialPlan       Plan?
+  trialEndsAt     DateTime?
+
+  stores          Store[]
+  upgradeRequests UpgradeRequest[]
 
   @@map("tenants")
 }
@@ -34,6 +39,28 @@ enum Plan {
   BASIC
   PRO
   ENTERPRISE
+}
+
+enum UpgradeRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model UpgradeRequest {
+  id          String               @id @default(uuid())
+  tenantId    String
+  fromPlan    Plan
+  toPlan      Plan
+  status      UpgradeRequestStatus @default(PENDING)
+  notes       String?
+  createdAt   DateTime             @default(now())
+  resolvedAt  DateTime?
+
+  tenant      Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("upgrade_requests")
 }
 
 // =============================================
