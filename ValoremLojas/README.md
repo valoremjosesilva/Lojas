@@ -93,14 +93,27 @@ Métodos suportados: **PIX, Boleto, Cartão de crédito/débito, Físico (POS)**
 
 ---
 
-## Próximos passos
+## Status do projeto
 
+### Implementado
+
+- [x] `ProductsModule` — CRUD de produtos com imagens e cache (Redis)
+- [x] `CategoriesModule` — CRUD completo + página admin
+- [x] `SearchModule` — Meilisearch (busca no storefront + indexação via fila)
+- [x] `MediaModule` — upload via URL assinada (S3 / Cloudflare R2)
+- [x] `InventoryModule` — variantes de produto (atributos, combinações, estoque)
+- [x] `OrdersModule` + `CheckoutModule` — pedidos e checkout
+- [x] `PaymentsModule` — integração com a plataforma Valorem (PIX, Boleto, Cartão, POS)
+- [x] `CouponsModule` — cupons de desconto + página admin
+- [x] `PlansModule` — limites de uso por plano (produtos / lojas)
+- [x] `BillingModule` — trial, solicitação de upgrade e endpoints admin
+- [x] `NotificationsModule` + `JobsModule` — e-mails transacionais via BullMQ
+- [x] Admin — Dashboard, Produtos, Pedidos, Categorias, Cupons, Jobs e Configurações
 - [x] Bull Board — UI de debug das filas em `/bull-board` (link em Admin → Jobs)
-- [ ] Implementar `CategoriesModule` com CRUD completo
-- [ ] Implementar `SearchModule` com Meilisearch
-- [ ] Implementar `MediaModule` com upload S3/R2
-- [ ] Implementar `CustomersModule` com histórico de pedidos
-- [ ] Admin: páginas de Produtos e Pedidos
-- [ ] Temas de loja (templates)
-- [ ] Billing SaaS com planos (Stripe)
-- [ ] Domínio próprio por tenant
+
+### Pendente
+
+- [ ] `CustomersModule` — hoje é um stub vazio; falta CRUD de clientes + histórico de pedidos
+- [ ] Temas de loja (templates) — atualmente apenas logo + cores básicas
+- [ ] Billing com gateway recorrente (ex.: Stripe) — upgrade ainda é manual/assistido
+- [ ] Domínio próprio por tenant — campo `domain` já existe no schema, mas o `TenantMiddleware` resolve apenas por subdomínio
