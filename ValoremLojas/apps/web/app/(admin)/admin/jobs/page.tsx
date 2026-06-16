@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { api } from '../../../../lib/api'
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+
 interface QueueCounts {
   waiting: number
   active: number
@@ -129,9 +131,19 @@ export default function AdminJobsPage() {
           <h1 className="text-2xl font-bold">Filas de Jobs</h1>
           <p className="text-sm text-gray-500 mt-1">Atualiza automaticamente a cada 5 segundos</p>
         </div>
-        <button onClick={load} className="border px-4 py-2 rounded-lg text-sm hover:bg-gray-50">
-          Atualizar
-        </button>
+        <div className="flex items-center gap-2">
+          <a
+            href={`${API_URL}/bull-board`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="border px-4 py-2 rounded-lg text-sm hover:bg-gray-50"
+          >
+            Abrir Bull Board ↗
+          </a>
+          <button onClick={load} className="border px-4 py-2 rounded-lg text-sm hover:bg-gray-50">
+            Atualizar
+          </button>
+        </div>
       </div>
 
       {loading ? (

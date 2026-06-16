@@ -4,6 +4,7 @@ import { BullModule } from '@nestjs/bull'
 
 import { DatabaseModule } from './infra/database/database.module'
 import { CacheModule } from './infra/cache/cache.module'
+import { BullBoardModule } from './infra/bull-board/bull-board.module'
 import { TenantMiddleware } from './common/middleware/tenant.middleware'
 
 import { AuthModule } from './modules/auth/auth.module'
@@ -36,6 +37,7 @@ import { JobsModule } from './modules/jobs/jobs.module'
     // Infra
     DatabaseModule,
     CacheModule,
+    BullBoardModule,
 
     // Módulos de negócio
     AuthModule,
