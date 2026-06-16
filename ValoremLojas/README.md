@@ -95,6 +95,7 @@ Métodos suportados: **PIX, Boleto, Cartão de crédito/débito, Físico (POS)**
 
 ## Próximos passos
 
+- [x] Bull Board — UI de debug das filas em `/bull-board` (link em Admin → Jobs)
 - [ ] Implementar `CategoriesModule` com CRUD completo
 - [ ] Implementar `SearchModule` com Meilisearch
 - [ ] Implementar `MediaModule` com upload S3/R2
