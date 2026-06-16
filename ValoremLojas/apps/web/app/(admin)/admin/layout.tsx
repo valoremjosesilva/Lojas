@@ -8,6 +8,7 @@ const NAV = [
   { href: '/admin/products', label: '📦 Produtos' },
   { href: '/admin/categories', label: '🏷️ Categorias' },
   { href: '/admin/orders', label: '🛍️ Pedidos' },
+  { href: '/admin/customers', label: '👤 Clientes' },
   { href: '/admin/coupons', label: '🎟️ Cupons' },
   { href: '/admin/jobs', label: '⚙️ Filas' },
   { href: '/admin/settings', label: '🔧 Configurações' },

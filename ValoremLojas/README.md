@@ -107,13 +107,13 @@ Métodos suportados: **PIX, Boleto, Cartão de crédito/débito, Físico (POS)**
 - [x] `CouponsModule` — cupons de desconto + página admin
 - [x] `PlansModule` — limites de uso por plano (produtos / lojas)
 - [x] `BillingModule` — trial, solicitação de upgrade e endpoints admin
+- [x] `CustomersModule` — CRUD de clientes + histórico de pedidos
 - [x] `NotificationsModule` + `JobsModule` — e-mails transacionais via BullMQ
-- [x] Admin — Dashboard, Produtos, Pedidos, Categorias, Cupons, Jobs e Configurações
+- [x] Admin — Dashboard, Produtos, Pedidos, Clientes, Categorias, Cupons, Jobs e Configurações
 - [x] Bull Board — UI de debug das filas em `/bull-board` (link em Admin → Jobs)
 
 ### Pendente
 
-- [ ] `CustomersModule` — hoje é um stub vazio; falta CRUD de clientes + histórico de pedidos
 - [ ] Temas de loja (templates) — atualmente apenas logo + cores básicas
 - [ ] Billing com gateway recorrente (ex.: Stripe) — upgrade ainda é manual/assistido
 - [ ] Domínio próprio por tenant — campo `domain` já existe no schema, mas o `TenantMiddleware` resolve apenas por subdomínio
