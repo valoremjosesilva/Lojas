@@ -11,9 +11,9 @@ export class ProductsService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private cache: Cache,
+    private readonly plansService: PlansService,
     @Optional() private readonly searchService?: SearchService,
     @Optional() private readonly mediaService?: MediaService,
-    private readonly plansService: PlansService,
   ) {}
 
   private cacheKey(storeId: string) {
