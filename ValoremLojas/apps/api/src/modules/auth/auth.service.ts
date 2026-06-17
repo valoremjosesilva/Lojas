@@ -11,6 +11,12 @@ export class AuthService {
   ) {}
 
   async login(email: string, password: string, storeId: string) {
+    if (!storeId) {
+      throw new UnauthorizedException(
+        'Loja não identificada. Verifique o domínio/subdomínio de acesso.',
+      )
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { storeId_email: { storeId, email } },
     })

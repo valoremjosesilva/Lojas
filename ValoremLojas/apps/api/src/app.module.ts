@@ -60,11 +60,12 @@ import { JobsModule } from './modules/jobs/jobs.module'
 })
 export class AppModule {
   configure(consumer: MiddlewareConsumer) {
-    // Aplica o middleware de tenant em todas as rotas exceto auth e webhooks
+    // Aplica o middleware de tenant em todas as rotas exceto webhooks e health.
+    // Auth (login) precisa do middleware para resolver o storeId a partir do
+    // header x-tenant / subdomínio.
     consumer
       .apply(TenantMiddleware)
       .exclude(
-        { path: 'auth/(.*)', method: RequestMethod.ALL },
         { path: 'payments/webhook', method: RequestMethod.POST },
         { path: 'health', method: RequestMethod.GET },
       )

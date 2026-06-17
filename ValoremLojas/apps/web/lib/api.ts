@@ -10,6 +10,23 @@ type FetchOptions = RequestInit & {
   token?: string
 }
 
+/**
+ * Resolve o tenant (subdomínio) no client a partir do hostname.
+ * Espelha a lógica do middleware do Next:
+ *   minhaloja.valorem.com.br → "minhaloja"
+ *   localhost                → NEXT_PUBLIC_DEV_STORE (padrão "demo")
+ * Em SSR (sem window) retorna undefined — o caller passa o tenant explicitamente.
+ */
+function resolveTenant(): string | undefined {
+  if (typeof window === 'undefined') return undefined
+  const hostname = window.location.hostname
+  if (!hostname.includes('.valorem')) {
+    return process.env.NEXT_PUBLIC_DEV_STORE || 'demo'
+  }
+  const parts = hostname.split('.')
+  return parts.length >= 3 ? parts[0] : undefined
+}
+
 export async function apiClient<T = any>(
   path: string,
   options: FetchOptions = {},
@@ -19,7 +36,8 @@ export async function apiClient<T = any>(
   const headers = new Headers(fetchOptions.headers)
   headers.set('Content-Type', 'application/json')
 
-  if (tenant) headers.set('x-tenant', tenant)
+  const resolvedTenant = tenant ?? resolveTenant()
+  if (resolvedTenant) headers.set('x-tenant', resolvedTenant)
   if (token) headers.set('Authorization', `Bearer ${token}`)
 
   const res = await fetch(`${API_URL}${path}`, {
